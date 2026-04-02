@@ -2,12 +2,11 @@ __all__ = ['train_epoch', 'test_epoch']
 
 import torch
 
-
 # 定义一个轮次epoch训练的函数
 def train_epoch(model, train_loader, loss, optimizer, device):
     model.train()
 
-    totoal_loss = 0  # 记录累计训练损失
+    totoal_loss = 0     # 记录累计训练损失
 
     for input, target in train_loader:
         input, target = input.to(device), target.to(device)
@@ -26,7 +25,6 @@ def train_epoch(model, train_loader, loss, optimizer, device):
         totoal_loss += loss_value.item()
     # 返回本轮次训练平均损失
     return totoal_loss / len(train_loader)
-
 
 # 定义一次测试（验证）的函数，返回评价指标（损失值）
 def test_epoch(model, test_loader, loss, device):
