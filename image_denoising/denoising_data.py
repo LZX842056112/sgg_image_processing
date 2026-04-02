@@ -6,15 +6,18 @@ from PIL import Image
 from torch.utils.data import Dataset, random_split  # 数据集和随机划分
 import torchvision.transforms as T  # 图像转换预处理
 
-from denoising_config import *      # 引入自定义配置
+from denoising_config import *  # 引入自定义配置
 
-import re
+# import re
+#
+# # 自定义函数：对图片文件名进行字母-数字排序
+# def sorted_alphanum(img_names):
+#     convert = lambda str: int(str) if str.isdigit() else str.lower()
+#     alphanum_key = lambda img_name: [convert(str) for str in re.split(r'([0-9]+)', img_name)]
+#     return sorted(img_names, key=alphanum_key)
 
-# 自定义函数：对图片文件名进行字母-数字排序
-def sorted_alphanum(img_names):
-    convert = lambda str: int(str) if str.isdigit() else str.lower()
-    alphanum_key = lambda img_name: [convert(str) for str in re.split(r'([0-9]+)', img_name)]
-    return sorted(img_names, key=alphanum_key)
+from common.utils import sorted_alphanum
+
 
 # 自定义图像数据集类
 class ImageDataset(Dataset):
@@ -22,7 +25,7 @@ class ImageDataset(Dataset):
     def __init__(self, main_dir, transform=None):
         self.main_dir = main_dir
         self.transform = transform
-        self.imgs = sorted_alphanum( os.listdir(main_dir) )  # 获取主目录下的所有图片文件名，保存为列表
+        self.imgs = sorted_alphanum(os.listdir(main_dir))  # 获取主目录下的所有图片文件名，保存为列表
 
     # 实现__len__方法
     def __len__(self):
@@ -46,6 +49,7 @@ class ImageDataset(Dataset):
 
         return noisy_image, tensor_image  # 返回 （噪声图像，原图像）
 
+
 # 自定义创建数据集函数
 def create_dataset():
     # 定义转换操作
@@ -60,6 +64,7 @@ def create_dataset():
     train_dataset, test_dataset = random_split(dataset, [TRAIN_RATIO, VAL_RATIO])
 
     return train_dataset, test_dataset
+
 
 # 测试
 if __name__ == '__main__':
