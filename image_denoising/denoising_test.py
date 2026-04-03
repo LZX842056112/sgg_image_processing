@@ -7,34 +7,48 @@ from denoising_engine import test_epoch
 
 import matplotlib.pyplot as plt
 
+
 # 提取一批测试数据，推理测试并对比画图
 def test(model, test_loader, device):
     model.to(device)
     model.eval()
-    # 1. 从测试集中获取一个批次的数据
+    # 1. 从验证数据加载器中获取一个批次的测试图像
+    # 创建验证数据加载器的迭代器
     data_iter = iter(test_loader)
+    # 获取下一个批次的数据（图像和标签）
     noisy_images, images = next(data_iter)
+    # 打印图像的形状，通常是 (batch_size, channels, height, width)
     print("输入和目标图像形状：", noisy_images.shape, images.shape)
 
     # 2. 前向传播，推理测试
     with torch.no_grad():
         noisy_images = noisy_images.to(device)
+        # 将噪声图像输入模型，得到去噪后的输出
         outputs = model(noisy_images)
+        # 打印输出的形状，通常是 (batch_size, channels, height, width)
         print("输出去噪图像形状：", outputs.shape)
 
     # 3. 转换图像数据，准备画图
+    # 将噪声图像从 PyTorch 张量转换为 NumPy 数组
+    # 调整维度顺序，将通道维度移到最后一维，适配 matplotlib 的显示格式
     noisy_images = noisy_images.permute(0, 2, 3, 1).cpu().numpy()
+    # 将输出张量调整为 (batch_size, channels, height, width) 的形状
+    # 使用 detach() 分离梯度信息，并将其转换为 NumPy 数组
+    # 调整维度顺序，将通道维度移到最后一维，适配 matplotlib 的显示格式
     outputs = outputs.permute(0, 2, 3, 1).detach().cpu().numpy()
     original_images = images.permute(0, 2, 3, 1).cpu().numpy()
 
-    # 4. 画图显示
+    # 4. 绘制前 10 张输入图像和重建图像,# 创建 3 行 10 列的子图
     fig, axes = plt.subplots(3, 10, figsize=(25, 4), sharex=True, sharey=True)
-    # 遍历每个子图，绘制对应图像
+    # 第一行显示噪声图像，第二行显示重建图像
     for imgs, ax_row in zip([noisy_images, outputs, original_images], axes):
+        # 遍历每张图像和对应的子图
         for img, ax in zip(imgs, ax_row):
+            # 显示图像，并去除多余的维度
             ax.imshow(img)
             ax.axis('off')
     plt.show()
+
 
 # 测试主流程
 if __name__ == '__main__':
@@ -59,5 +73,5 @@ if __name__ == '__main__':
     print("==============4. 测试结果如下 ==============")
     test(loaded_denoiser, test_loader, device)
 
-    test_loss = test_epoch( loaded_denoiser, test_loader, loss = torch.nn.MSELoss(), device=device)
+    test_loss = test_epoch(loaded_denoiser, test_loader, loss=torch.nn.MSELoss(), device=device)
     print("测试集平均误差：", test_loss)

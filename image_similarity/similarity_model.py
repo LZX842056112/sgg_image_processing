@@ -6,6 +6,12 @@ import torch.nn as nn
 
 # 编码器
 class ConvEncoder(nn.Module):
+    """
+    卷积编码器：通过卷积和下采样操作压缩图像为低维特征表示
+    输入形状：(batch_size, 3, H, W)  # 假设输入为RGB图像
+    输出形状：(batch_size, 256, H/32, W/32)  # 经过5次2x2池化，尺寸缩小32倍
+    """
+
     # 初始化
     def __init__(self):
         super().__init__()
@@ -18,7 +24,7 @@ class ConvEncoder(nn.Module):
         # 通用池化层
         self.pool = nn.MaxPool2d(2, stride=2)
 
-    # 前向传播
+    # 前向传播：按顺序通过各层实现下采样
     def forward(self, x):
         x = torch.relu(self.conv1(x))
         x = self.pool(x)
@@ -39,6 +45,12 @@ class ConvEncoder(nn.Module):
 
 # 解码器
 class ConvDecoder(nn.Module):
+    """
+    卷积解码器：通过转置卷积上采样，将低维特征重建为原始图像
+    输入形状：(batch_size, 256, H/32, W/32)
+    输出形状：(batch_size, 3, H, W)  # 恢复原始尺寸
+    """
+
     # 初始化
     def __init__(self):
         super().__init__()
@@ -49,7 +61,7 @@ class ConvDecoder(nn.Module):
         self.conv_t4 = nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2)
         self.conv_t5 = nn.ConvTranspose2d(16, 3, kernel_size=2, stride=2)
 
-    # 前向传播
+    # 前向传播：通过转置卷积逐步上采样
     def forward(self, x):
         x = torch.relu(self.conv_t1(x))
         # print("第一层转置卷积后的形状：", x.shape)
@@ -65,14 +77,14 @@ class ConvDecoder(nn.Module):
 
 
 if __name__ == '__main__':
-    # 定义输入数据
+    # 创建一个随机输入张量
     input = torch.randn(10, 3, 64, 64)
 
-    # 创建模型
+    # 创建一个卷积编码器模型
     encoder = ConvEncoder()
     decoder = ConvDecoder()
 
-    # 前向传播
+    # 编码输入张量
     encoded_feature = encoder(input)
     output = decoder(encoded_feature)
 

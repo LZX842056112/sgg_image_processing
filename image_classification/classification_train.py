@@ -15,6 +15,7 @@ from classification_model import Classifier  # 模型
 if __name__ == '__main__':
     # 基本准备工作
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # 调用工具函数设置全局随机种子（确保可复现性）
     seed_everything(SEED)
 
     # 1. 创建数据集
@@ -22,8 +23,9 @@ if __name__ == '__main__':
     print(len(train_dataset), len(val_dataset))
     print("=============1. 数据集创建完成=============")
 
-    # 2. 定义数据加载器
+    # 2. 训练数据加载器（打乱顺序，丢弃最后不完整的批次）
     train_loader = DataLoader(train_dataset, TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
+    # 验证数据加载器（不打乱，完整加载）
     val_loader = DataLoader(val_dataset, VAL_BATCH_SIZE, shuffle=False)
     print("============2. 数据加载器创建完成============")
 
@@ -31,7 +33,9 @@ if __name__ == '__main__':
     classifier = Classifier()
     classifier.to(device)
 
+    # 指定损失函数为交叉熵损失函数，适用于多分类任务
     loss = nn.CrossEntropyLoss()
+    # 指定优化器为Adam优化器，优化对象是模型的所有参数，学习率为0.001
     optimizer = optim.AdamW(classifier.parameters(), lr=LEARNING_RATE)
     print("=============3. 模型创建完成=============")
 
@@ -47,15 +51,19 @@ if __name__ == '__main__':
 
         # 执行一次验证过程
         val_loss, val_acc = test_epoch(classifier, val_loader, loss, device)
-        print(f"Epoch {epoch + 1}/{EPOCHS}, Validation Loss: {val_loss:.6f}, Validation Acc: {val_acc:.6f}")
+        # 打印当前epoch的训练损失
+        print(f"\n----------> Epochs = {epoch + 1}, Training Loss : {train_loss} <----------")
 
-        # 模型保存逻辑
+        # 模型保存逻辑：当验证损失创新低时保存模型
         if val_loss < min_val_loss:
             print("验证损失减小，保存模型...")
+            # 保存编码器和解码器状态字典
             torch.save(classifier.state_dict(), CLASSIFIER_MODEL_NAME)
             min_val_loss = val_loss
         else:
             print("验证损失没有减小，不保存模型。")
+        # 打印验证损失
+        print(f"Epochs = {epoch + 1}, Validation Loss : {val_loss}")
 
     print("=============4. 模型训练完成=============")
     print("最终验证损失为：", min_val_loss)

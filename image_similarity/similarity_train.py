@@ -14,6 +14,7 @@ from similarity_engine import *
 # 训练主流程
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # 调用工具函数设置全局随机种子（确保可复现性）
     seed_everything(SEED)
 
     # 1. 创建数据集并划分
@@ -21,8 +22,11 @@ if __name__ == '__main__':
     print("=============1. 数据集创建完成=============")
 
     # 2. 定义数据加载器
+    # 训练数据加载器（打乱顺序，丢弃最后不完整的批次）
     train_loader = DataLoader(dataset=train_dataset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
+    # 验证数据加载器（不打乱，完整加载）
     val_loader = DataLoader(dataset=val_dataset, batch_size=VAL_BATCH_SIZE)
+    # 全量数据加载器（用于生成嵌入）
     full_loader = DataLoader(dataset=dataset, batch_size=FULL_BATCH_SIZE, shuffle=False)
 
     print("============2. 数据加载器创建完成============")
@@ -32,9 +36,9 @@ if __name__ == '__main__':
     decoder = ConvDecoder()
     encoder.to(device)
     decoder.to(device)
-    # 损失函数：MSE
+    # 定义损失函数（均方误差损失）
     loss = nn.MSELoss()
-    # 优化器：AdamW
+    # 定义优化器（联合优化编码器和解码器参数）
     params = list(encoder.parameters()) + list(decoder.parameters())
     optimizer = optim.AdamW(params, lr=LEARNING_RATE)
 
@@ -49,17 +53,20 @@ if __name__ == '__main__':
         print(f"Epoch {epoch + 1}/{EPOCHS}, Train Loss: {train_loss:.6f}")
         # 执行一次验证过程
         val_loss = test_epoch(encoder, decoder, val_loader, loss, device)
-        print(f"Epoch {epoch + 1}/{EPOCHS}, Validation Loss: {val_loss:.6f}")
+        # 打印当前epoch的训练损失
+        print(f"\n----------> Epochs = {epoch + 1}, Training Loss : {train_loss:.6f} <----------")
 
-        # 模型保存逻辑
+        # 模型保存逻辑：当验证损失创新低时保存模型
         if val_loss < min_val_loss:
             print("验证损失减小，保存模型...")
+            # 保存编码器和解码器状态字典
             torch.save(encoder.state_dict(), ENCODER_MODEL_NAME)
             torch.save(decoder.state_dict(), DECODER_MODEL_NAME)
             min_val_loss = val_loss
         else:
             print("验证损失没有减小，不保存模型。")
-
+            # 打印验证损失
+            print(f"Epochs = {epoch + 1}, Validation Loss : {val_loss:.6f}")
     print("=============4. 模型训练完成=============")
     print("最终验证损失为：", min_val_loss)
 
@@ -69,6 +76,7 @@ if __name__ == '__main__':
     encoder.load_state_dict(encoder_state_dict)
 
     # 5.2 生成嵌入矩阵
+    # 调用函数生成所有数据的嵌入表示
     embeddings = create_embeddings(encoder, full_loader, device)
 
     # 5.3 保存到文件（向量数据库，如Chroma）

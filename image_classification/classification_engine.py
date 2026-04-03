@@ -5,11 +5,18 @@ import torch
 
 # 定义一次测试（验证）的函数，返回评价指标（损失值、准确率）
 def test_epoch(model, test_loader, loss, device):
+    """
+    执行验证步骤（不更新参数）
+    参数与train_step类似，但不含优化器参数
+
+    返回值:
+    - 验证集的平均损失（标量值）
+    """
     model.eval()
     total_loss = 0  # 累加测试损失
     correct_num = 0  # 累加预测正确数量
     test_num = 0  # 测试集总样本数
-
+    # 禁用梯度计算以节省内存和计算资源
     with torch.no_grad():
         for input, target in test_loader:
             input, target = input.to(device), target.to(device)

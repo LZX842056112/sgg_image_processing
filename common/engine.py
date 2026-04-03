@@ -5,19 +5,33 @@ import torch
 
 # 定义一个轮次epoch训练的函数
 def train_epoch(model, train_loader, loss, optimizer, device):
+    """
+    执行一个完整的训练迭代
+
+    参数:
+    - encoder: 卷积编码器（如ConvEncoder）
+    - decoder: 卷积解码器（如ConvDecoder）
+    - train_loader: 训练数据加载器，提供批次化的（输入图像, 目标图像）
+    - loss: 损失函数（如MSE）
+    - optimizer: 优化器（如Adam）
+    - device: 计算设备（"cuda" 或 "cpu"）
+
+    返回值:
+    - 当前epoch的平均训练损失（标量值）
+    """
     model.train()
 
     totoal_loss = 0  # 记录累计训练损失
-
+    # 遍历训练数据加载器中的所有批次
     for input, target in train_loader:
         input, target = input.to(device), target.to(device)
-        # 1. 前向传播
+        # 1. 前向传播：编码器生成潜在表示
         output = model(input)
-        # 2. 计算损失
+        # 2. 计算重建损失（预测图像与目标图像的差异）
         loss_value = loss(output, target)
-        # 3. 反向传播
+        # 3. 反向传播：计算梯度
         loss_value.backward()
-        # 4. 更新参数
+        # 4. 优化器更新模型参数
         optimizer.step()
         # 5. 梯度清零
         optimizer.zero_grad()

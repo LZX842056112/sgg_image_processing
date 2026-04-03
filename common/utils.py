@@ -2,7 +2,7 @@ import numpy as np  # 数值计算库
 import os  # 操作系统接口库
 import torch  # PyTorch深度学习框架
 import random  # 随机数生成库
-import re
+import re  # 正则表达式相关库
 
 
 # 对所有库设置相同的随机数种子，保证训练过程可复现
